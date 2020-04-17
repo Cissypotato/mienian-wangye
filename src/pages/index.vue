@@ -101,10 +101,9 @@
         </div>
       </div>
       <!-- 底部 -->
-      
-      <div class="box"  v-if="orderUse">该订单已使用</div>
-      <div class="box" v-else @click="confirmUse">确定使用订单</div>
 
+      <div class="box" v-if="orderUse">该订单已使用</div>
+      <div class="box" v-else @click="confirmUse">确定使用订单</div>
     </div>
     <div class="container" v-else>
       <div class="banner-wrapper">
@@ -128,36 +127,41 @@
 </template>
 
 <script>
+// import { Cell, Checklist } from 'mint-ui';
+import { MessageBox ,Toast} from "mint-ui";
+
 export default {
   name: "Inedx",
   props: {},
+  components: {},
   data() {
     return {
-      isLogin: true,
-      orderUse:false,
+      isLogin: false,
+      orderUse: false,
       number: "",
       password: "",
       order_id: 1,
-      token:"",
+      token: "",
       data: {}
     };
   },
-  created(){
-   //   this.getOrserId()
+  created() {
+    this.order_id=this.getOrderId('id')
+    // console.log(this.order_id)
   },
   mounted() {
     //  this.getInitData();
   },
   methods: {
-    getOrserId() {
-      let url = window.location.href;
-      let cs = url.split("?")[1]; //获取?之后的参数字符串
-      var cs_arr = cs.split("&"); //参数字符串分割为数组
-      var obj = {};
-      for (var i = 0; i < cs_arr.length; i++) {
-        //遍历数组，拿到json对象
-        obj[cs_arr[i].split("=")[0]] = cs_arr[i].split("=")[1];
-      }
+    getOrderId(key) {
+       var query = window.location.search.substring(1);
+      //  var query = "id=1&image=awesome.jpg"
+       var vars = query.split("&");
+       console.log(vars)
+       for (var i=0;i<vars.length;i++) {
+               var pair = vars[i].split("=");
+               if(pair[0] == key){return pair[1];}
+       }
     },
     login() {
       if (this.number == "") {
@@ -174,9 +178,10 @@ export default {
           })
         })
           .then(response => {
-             console.log(response)
+            console.log(response);
             if (response.data.code == 200) {
-               this.token=response.data.data
+              Toast('登录成功')
+              this.token = response.data.data;
               this.isLogin = true;
               this.getInitData();
             } else {
@@ -195,14 +200,14 @@ export default {
       this.axios({
         method: "post",
         url: "https://mn.guaishe.com/index.php/index/pc/orderdesc",
-        data: this.qs.stringify({ id: this.order_id,token:this.token })
+        data: this.qs.stringify({ id: this.order_id, token: this.token })
       })
         .then(response => {
           console.log(response);
           if (response.data.code == 200) {
             this.data = response.data.info;
           } else {
-            window.alert(response.data.msg);
+            Toast(response.data.msg);
           }
           console.log(response);
         })
@@ -211,27 +216,32 @@ export default {
           //  this.$message.error("网络错误，请联系管理员");
         });
     },
-    confirmUse(){//确认使用订单
-    this.axios({
-        method: "post",
-        url: "https://mn.guaishe.com/index.php/index/pc/confirm",
-        data: this.qs.stringify({ id: this.order_id,token:this.token })
-      })
-        .then(response => {
-          console.log(response);
-          if (response.data.code == 200) {
-             this.orderUse=true
-            console.log()
-          } else {
-            window.alert(response.data.msg);
-          }
-          console.log(response);
+    confirmUse() {
+      //确认使用订单
+      MessageBox.confirm("确定执行此操作?").then(action => {
+        console.log(action);
+        this.axios({
+          method: "post",
+          url: "https://mn.guaishe.com/index.php/index/pc/confirm",
+          data: this.qs.stringify({ id: this.order_id, token: this.token })
         })
-        .catch(res => {
-          console.log(res);
-          //  this.$message.error("网络错误，请联系管理员");
-        });
-
+          .then(response => {
+            
+            if (response.data.code == 200) {
+              Toast('订单已使用')
+              this.orderUse = true;
+              // console.log();
+            } else {
+              Toast(response.data.msg);
+            }
+            // console.log(response);
+          })
+          .catch(res => {
+            console.log(res);
+            Toast("网络错误，请联系管理员");
+          });
+      });
+     
     }
   }
 };
@@ -330,8 +340,8 @@ export default {
 /* 订单详细 */
 
 .orderDetail {
-  border-top: 5px solid #eee;
-  padding: 4vh 4vw;
+  border-top: 2px solid #eee;
+  padding:  4vw;
   background-color: white;
 }
 
@@ -342,9 +352,9 @@ export default {
 
 .orderDetail_two {
   display: flex;
-  font-size: 26rpx;
+  font-size: 13px;
   width: 90vw;
-  margin-bottom: -11rpx;
+  margin-bottom: -6px;
   position: relative;
 }
 
@@ -360,9 +370,7 @@ export default {
   width: 100%;
 }
 
-
-
-.orderDetail_two_copy {
+/* .orderDetail_two_copy {
   position: absolute;
   left: 80vw;
   border: 1px solid #f58c6c;
@@ -371,7 +379,7 @@ export default {
   text-align: center;
   border-radius: 60rpx;
   color: #f58c6c;
-}
+} */
 .orderDetail_two > view:nth-child(2) {
   margin-left: 5vw;
   color: #555;
@@ -382,8 +390,8 @@ export default {
 .total {
   width: 100%;
   border-top: 5rpx solid #eee;
-  padding: 4vh 4vw;
-  margin-bottom: 25vh;
+  padding: 4vw;
+  margin-bottom: 15vh;
   background-color: white;
   box-sizing: border-box;
 }
@@ -396,13 +404,13 @@ export default {
 .total_two {
   display: flex;
   justify-content: space-between;
-  margin-bottom: -10rpx;
+  margin-bottom: 3px;
 }
 
 .total_two_title {
   width: 18vw;
   text-align: justify;
-  font-size: 26rpx;
+  font-size: 13px;
   color: #626262;
 }
 
@@ -415,13 +423,13 @@ export default {
 .total_two_L {
   width: 25vw;
   display: flex;
-  font-size: 26rpx;
+  font-size: 13px;
 }
 
 .total_two_text {
   display: flex;
   color: #626262;
-  font-size: 26rpx;
+  font-size: 13px;
 }
 
 /* 底部 */
