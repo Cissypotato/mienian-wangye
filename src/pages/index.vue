@@ -128,7 +128,7 @@
 
 <script>
 // import { Cell, Checklist } from 'mint-ui';
-import { MessageBox ,Toast} from "mint-ui";
+import { MessageBox, Toast } from "mint-ui";
 
 export default {
   name: "Inedx",
@@ -142,26 +142,34 @@ export default {
       password: "",
       order_id: 1,
       token: "",
-      data: {}
+      data: {},
+
     };
   },
   created() {
-    this.order_id=this.getOrderId('id')
-    // console.log(this.order_id)
+     this.order_id = this.getOrderId("id");
+     
+    //  if(userId){
+    //     this.getInitData();
+    //  }
+    
+    console.log(this.order_id)
   },
   mounted() {
-    //  this.getInitData();
+     this.handleStorage("userId");
   },
   methods: {
     getOrderId(key) {
-       var query = window.location.search.substring(1);
-      //  var query = "id=1&image=awesome.jpg"
-       var vars = query.split("&");
-       console.log(vars)
-       for (var i=0;i<vars.length;i++) {
-               var pair = vars[i].split("=");
-               if(pair[0] == key){return pair[1];}
-       }
+      let query = window.location.search.substring(1);
+      //  let query = "id=1&image=awesome.jpg"
+      let vars = query.split("&");
+      console.log(vars);
+      for (let i = 0; i < vars.length; i++) {
+        let pair = vars[i].split("=");
+        if (pair[0] == key) {
+          return pair[1];
+        }
+      }
     },
     login() {
       if (this.number == "") {
@@ -180,12 +188,13 @@ export default {
           .then(response => {
             console.log(response);
             if (response.data.code == 200) {
-              Toast('登录成功')
+              Toast("登录成功");
               this.token = response.data.data;
+              this.handleStorage("userId", response.data.data);
               this.isLogin = true;
-              this.getInitData();
+              // this.getInitData();
             } else {
-              window.alert(response.data.msg);
+              Toast(response.data.msg);
             }
             console.log(response);
           })
@@ -196,16 +205,19 @@ export default {
       }
     },
 
-    getInitData() {
+    getInitData(token) {
       this.axios({
         method: "post",
         url: "https://mn.guaishe.com/index.php/index/pc/orderdesc",
-        data: this.qs.stringify({ id: this.order_id, token: this.token })
+        data: this.qs.stringify({ id: this.order_id, token: token })
       })
         .then(response => {
           console.log(response);
           if (response.data.code == 200) {
             this.data = response.data.info;
+            if(response.data.info.state==3){
+              this.orderUse=true
+            }
           } else {
             Toast(response.data.msg);
           }
@@ -226,9 +238,8 @@ export default {
           data: this.qs.stringify({ id: this.order_id, token: this.token })
         })
           .then(response => {
-            
             if (response.data.code == 200) {
-              Toast('订单已使用')
+              Toast("订单已使用");
               this.orderUse = true;
               // console.log();
             } else {
@@ -241,8 +252,64 @@ export default {
             Toast("网络错误，请联系管理员");
           });
       });
-     
+    },
+
+    handleStorage(key, value) {
+      let timestamp = Date.parse(new Date()) / 1000;
+      if (key && value) {
+        this.getInitData(value)
+        let expire = timestamp +60*10;
+        value = value + "|" + expire;
+        window.localStorage.setItem(key, value);
+      } else if (key) {
+        let val = window.localStorage.getItem(key);
+        // console.log(val);
+        if (val) {
+          let tmp = val.split("|");
+          if (!tmp[1] || timestamp >= tmp[1]) {
+            this.isLogin = false;
+            window.localStorage.removeItem("userId");
+            return false;
+          } else {
+            this.token=tmp[0]
+            this.getInitData(tmp[0])
+            this.isLogin = true;
+            return tmp[0];
+          }
+        } else {
+          this.isLogin = false;
+        }
+      }
     }
+
+    // cache(key, value, seconds) {
+    //   var timestamp = Date.parse(new Date()) / 1000;
+    //   if (key && value === null) {
+    //     //删除缓存
+    //     uni.removeStorageSync(key);
+    //   } else if (key && value) {
+    //     //设置缓存
+    //     if (!seconds) {
+    //       var expire = timestamp + 3600 * 24 * 7;
+    //     } else {
+    //       var expire = timestamp + seconds;
+    //     }
+    //     value = value + "|" + expire;
+    //     uni.setStorageSync(key, value);
+    //   } else if (key) {
+    //     //获取缓存
+    //     var val = uni.getStorageSync(key);
+    //     var tmp = val.split("|");
+    //     if (!tmp[1] || timestamp >= tmp[1]) {
+    //       uni.removeStorageSync(key);
+    //       return false;
+    //     } else {
+    //       return tmp[0];
+    //     }
+    //   } else {
+    //     alert("key不能空");
+    //   }
+    // }
   }
 };
 </script>
@@ -341,7 +408,7 @@ export default {
 
 .orderDetail {
   border-top: 2px solid #eee;
-  padding:  4vw;
+  padding: 4vw;
   background-color: white;
 }
 
